@@ -5,18 +5,12 @@ import (
 	"os"
 )
 
-func textToSpeech(text string) error {
-	file, err := os.Create("output.txt")
-	if err != nil {
-		return  err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString("AUDIO_SIMULATION: " + text)
-	return err
+func textToSpeech(text string) (string, error) {
+	output := "AUDIO_SIMULATION: " + text
+	return output, nil
 }
 
-func main()  {
+func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: go run main.go \"your text\"")
 		return
@@ -24,7 +18,13 @@ func main()  {
 
 	text := os.Args[1]
 
-	err := textToSpeech(text)
+	result, err := textToSpeech(text)
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+
+	err = os.WriteFile("output.txt", []byte(result), 0644)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
