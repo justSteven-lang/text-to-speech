@@ -1,34 +1,23 @@
 package main
 
 import (
-	"fmt"
+	"log"
 	"os"
-)
 
-func textToSpeech(text string) (string, error) {
-	output := "AUDIO_SIMULATION: " + text
-	return output, nil
-}
+	"github.com/justSteven-lang/text-to-speech/tts"
+)
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: go run main.go \"your text\"")
-		return
+		log.Fatal("Usage: go run main.go \"your text here\"")
 	}
 
 	text := os.Args[1]
 
-	result, err := textToSpeech(text)
+	err := tts.TextToSpeech(text, "output.wav")
 	if err != nil {
-		fmt.Println("Error:", err)
-		return
+		log.Fatal(err)
 	}
 
-	err = os.WriteFile("output.txt", []byte(result), 0644)
-	if err != nil {
-		fmt.Println("Error:", err)
-		return
-	}
-
-	fmt.Println("Text converted to audio (simulated). File: output.txt")
+	log.Println("Audio generated: output.wav")
 }
