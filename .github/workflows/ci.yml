@@ -23,8 +23,8 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.64.8
           install-mode: source
+          args: --timeout 5m
 
       - name: Install coverage dependencies
         run: sudo apt install -y bc
