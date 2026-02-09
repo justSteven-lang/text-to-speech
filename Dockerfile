@@ -8,10 +8,10 @@ WORKDIR /app
 RUN apk add --no-cache git
 
 COPY go.mod ./
-RUN go mod download || true
+RUN go mod download
 
 COPY . .
-RUN go env && go build -v -o tts-app
+RUN go build -v -o tts-app .
 
 # =========================
 # Runtime stage
