@@ -11,7 +11,7 @@ COPY go.mod ./
 RUN go mod download || true
 
 COPY . .
-RUN go build -o tts-app .
+RUN go env && go build -v -x .
 
 # =========================
 # Runtime stage
