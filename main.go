@@ -1,21 +1,25 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"os"
 
 	"github.com/justSteven-lang/text-to-speech/tts"
 )
 
-func main() {
-	if len(os.Args) < 2 {
-		log.Fatal("Usage: go run main.go \"your text here\"")
+// run contains business logic so it can be tested
+func run(args []string) error {
+	if len(args) < 2 {
+		return errors.New("missing text argument")
 	}
 
-	text := os.Args[1]
+	text := args[1]
+	return tts.TextToSpeech(text, "output.wav")
+}
 
-	err := tts.TextToSpeech(text, "output.wav")
-	if err != nil {
+func main() {
+	if err := run(os.Args); err != nil {
 		log.Fatal(err)
 	}
 
