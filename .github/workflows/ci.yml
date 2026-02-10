@@ -45,5 +45,11 @@ jobs:
           exit 1
           fi
 
+      - name: Upload coverage artifact
+        uses: action/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.out
+
       - name: Build Docker image
         run: docker build -t text-to-speech .
