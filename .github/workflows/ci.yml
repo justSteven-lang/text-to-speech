@@ -62,14 +62,15 @@ jobs:
           path: coverage.out
 
       - name: Login to Github Container Registry
-        if: startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tagsclear/')
         run: echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build and Push Docker image
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           VERSION=${GITHUB_REF#refs/tags/}
-          IMAGE=ghcr.io/${{ github.repository }}:$VERSION
+          REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE=ghcr.io/$REPO:$VERSION
 
           echo "Build $IMAGE"
           docker build -t $IMAGE .
