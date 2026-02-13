@@ -25,7 +25,12 @@ func speakHandler(ttsFunc TTSFunc) http.HandlerFunc {
 			return
 		}
 
-		defer os.Remove(tmpFile.Name())
+		defer func() {
+	if err := os.Remove(tmpFile.Name()); err != nil {
+		log.Println("failed to remove temp file:", err)
+	}
+}()
+
 
 		if err := ttsFunc(text, tmpFile.Name()); err != nil {
 			http.Error(w, "failed to generate audio", http.StatusInternalServerError)
@@ -37,10 +42,19 @@ func speakHandler(ttsFunc TTSFunc) http.HandlerFunc {
 			http.Error(w, "failed to read audio file", http.StatusInternalServerError)
 			return
 		}
-		defer file.Close()
+		defer func() {
+	if err := file.Close(); err != nil {
+		log.Println("failed to close file:", err)
+	}
+}()
+
 
 		w.Header().Set("Content-Type", "audio/wav")
-		io.Copy(w, file)
+		if _, err := io.Copy(w, file); err != nil {
+	http.Error(w, "failed to stream file", http.StatusInternalServerError)
+	return
+}
+
 	}
 }
 
