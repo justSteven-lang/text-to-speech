@@ -16,33 +16,41 @@ func speakHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create temp file
 	tmpFile, err := os.CreateTemp("", "speech-*.wav")
 	if err != nil {
 		http.Error(w, "failed to create temp file", http.StatusInternalServerError)
 		return
 	}
-	defer os.Remove(tmpFile.Name())
 
-	// Generate speech into temp file
-	err = tts.TextToSpeech(text, tmpFile.Name())
-	if err != nil {
+	// Cleanup temp file safely
+	defer func() {
+		if err := os.Remove(tmpFile.Name()); err != nil {
+			log.Println("failed to remove temp file:", err)
+		}
+	}()
+
+	if err := tts.TextToSpeech(text, tmpFile.Name()); err != nil {
 		http.Error(w, "failed to generate audio", http.StatusInternalServerError)
 		return
 	}
 
-	// Open file again to send response
 	file, err := os.Open(tmpFile.Name())
 	if err != nil {
 		http.Error(w, "failed to read audio file", http.StatusInternalServerError)
 		return
 	}
-	defer file.Close()
+
+	defer func() {
+		if err := file.Close(); err != nil {
+			log.Println("failed to close file:", err)
+		}
+	}()
 
 	w.Header().Set("Content-Type", "audio/wav")
-	w.WriteHeader(http.StatusOK)
 
-	io.Copy(w, file)
+	if _, err := io.Copy(w, file); err != nil {
+		log.Println("failed to write response:", err)
+	}
 }
 
 func main() {
