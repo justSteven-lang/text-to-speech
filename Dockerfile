@@ -24,6 +24,8 @@ WORKDIR /app
 
 COPY --from=builder /app/tts-app .
 
+EXPOSE 8080
+
 USER nobody
 
 CMD ["./tts-app"]

@@ -1,17 +1,29 @@
 package main
 
-import "testing"
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+)
 
-func TestRun_MissingArgs(t *testing.T) {
-	err := run([]string{"cmd"})
-	if err == nil {
-		t.Fatal("expected error when args are missing")
+func TestSpeakHandler_MissingText(t *testing.T) {
+	req := httptest.NewRequest("GET", "/speak", nil)
+	w := httptest.NewRecorder()
+
+	speakHandler(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
 	}
 }
 
-func TestRun_Success(t *testing.T) {
-	err := run([]string{"cmd", "hello world"})
-	if err != nil {
-		t.Fatalf("expected no error, got %v", err)
+func TestSpeakHandler_Success(t *testing.T) {
+	req := httptest.NewRequest("GET", "/speak?text=hello", nil)
+	w := httptest.NewRecorder()
+
+	speakHandler(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
 	}
 }
