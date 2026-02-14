@@ -62,6 +62,15 @@ func speakHandler(ttsFunc TTSFunc) http.HandlerFunc {
 	func main() {
 		http.HandleFunc("/speak", speakHandler(tts.TextToSpeech))
 
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+    w.WriteHeader(http.StatusOK)
+    if _, err := w.Write([]byte("OK")); err != nil {
+    http.Error(w, "failed to write response", http.StatusInternalServerError)
+    return
+}
+
+})
+
 	log.Println("Server running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
