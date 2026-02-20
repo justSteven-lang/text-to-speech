@@ -1,5 +1,29 @@
+# Git
 .git
 .gitignore
-Dockerfile
-docker-compose.yml
-*.md
+
+# Env
+.env
+
+# Logs
+*.log
+logs/
+compose/logs/
+
+# Coverage
+coverage.out
+coverage.html
+
+# Test files
+*_test.go
+
+# Local build
+tts-app
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db
