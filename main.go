@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"io"
 	"log"
 	"net/http"
@@ -14,6 +15,9 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+//go:embed static/index.html
+var indexHTML []byte
 
 type TTSFunc func(text, filename string) error
 
@@ -109,6 +113,12 @@ func newMux() http.Handler {
 	mux.Handle("/metrics", promhttp.Handler())
 
 	mux.HandleFunc("/speak", speakHandler(tts.TextToSpeech))
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {   // ← tambahkan
+        w.Header().Set("Content-Type", "text/html")                      // ← ini
+        if _, err := w.Write(indexHTML); err != nil {                    // ← dan
+            http.Error(w, "failed to write response", http.StatusInternalServerError) // ← ini
+        }                                                                 // ← sampai
+    })                                                                    // ← sini
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)

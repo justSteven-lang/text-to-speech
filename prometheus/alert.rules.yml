@@ -1,0 +1,10 @@
+groups:
+  - name: test
+    rules:
+      - alert: AlwaysFiring
+        expr: vector(1)
+        for: 5s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Always firing alert"

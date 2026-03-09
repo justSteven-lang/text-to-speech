@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Text to Speech</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .card {
+        background: #1e293b;
+        border: 1px solid #334155;
+        border-radius: 16px;
+        padding: 40px;
+        width: 100%;
+        max-width: 520px;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+      }
+      .badge {
+        font-size: 11px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #38bdf8;
+        margin-bottom: 12px;
+      }
+      h1 {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #f8fafc;
+      }
+      .subtitle {
+        color: #64748b;
+        font-size: 14px;
+        margin-bottom: 32px;
+      }
+      label {
+        display: block;
+        font-size: 13px;
+        color: #94a3b8;
+        margin-bottom: 8px;
+        letter-spacing: 0.5px;
+      }
+      textarea {
+        width: 100%;
+        background: #0f172a;
+        border: 1px solid #334155;
+        border-radius: 10px;
+        padding: 14px;
+        color: #e2e8f0;
+        font-size: 15px;
+        font-family: inherit;
+        resize: vertical;
+        min-height: 120px;
+        outline: none;
+        transition: border-color 0.2s;
+      }
+      textarea:focus {
+        border-color: #38bdf8;
+      }
+      button {
+        width: 100%;
+        margin-top: 16px;
+        padding: 14px;
+        background: #38bdf8;
+        color: #0f172a;
+        border: none;
+        border-radius: 10px;
+        font-size: 15px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      button:hover {
+        background: #7dd3fc;
+      }
+      button:disabled {
+        background: #334155;
+        color: #64748b;
+        cursor: not-allowed;
+      }
+      .audio-wrap {
+        margin-top: 24px;
+        display: none;
+      }
+      .audio-label {
+        font-size: 12px;
+        color: #64748b;
+        margin-bottom: 8px;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+      }
+      audio {
+        width: 100%;
+        border-radius: 8px;
+      }
+      .status {
+        margin-top: 16px;
+        font-size: 13px;
+        text-align: center;
+        min-height: 20px;
+        color: #64748b;
+      }
+      .status.loading {
+        color: #38bdf8;
+      }
+      .status.error {
+        color: #f87171;
+      }
+      .status.success {
+        color: #4ade80;
+      }
+      .footer {
+        margin-top: 32px;
+        padding-top: 20px;
+        border-top: 1px solid #334155;
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #334155;
+        letter-spacing: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <div class="badge">⎈ Kubernetes · v0.5.0</div>
+      <h1>Text to Speech</h1>
+      <p class="subtitle">Powered by espeak · Deployed on K8s</p>
+
+      <label>TEKS</label>
+      <textarea
+        id="textInput"
+        placeholder="Ketik teks yang ingin diucapkan..."
+      ></textarea>
+
+      <button id="speakBtn" onclick="speak()">▶ Generate Audio</button>
+
+      <div class="status" id="status"></div>
+
+      <div class="audio-wrap" id="audioWrap">
+        <div class="audio-label">Output Audio</div>
+        <audio id="audioPlayer" controls></audio>
+      </div>
+
+      <div class="footer">
+        <span>/speak · /health · /metrics</span>
+        <span>TTS APP</span>
+      </div>
+    </div>
+
+    <script>
+      async function speak() {
+        const text = document.getElementById("textInput").value.trim();
+        const btn = document.getElementById("speakBtn");
+        const status = document.getElementById("status");
+        const wrap = document.getElementById("audioWrap");
+        const player = document.getElementById("audioPlayer");
+
+        if (!text) {
+          status.className = "status error";
+          status.textContent = "Teks tidak boleh kosong!";
+          return;
+        }
+
+        btn.disabled = true;
+        status.className = "status loading";
+        status.textContent = "Generating audio...";
+        wrap.style.display = "none";
+
+        try {
+          const res = await fetch("/speak?text=" + encodeURIComponent(text));
+          if (!res.ok) throw new Error("Server error: " + res.status);
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          player.src = url;
+          wrap.style.display = "block";
+          player.play();
+          status.className = "status success";
+          status.textContent = "Audio berhasil digenerate!";
+        } catch (err) {
+          status.className = "status error";
+          status.textContent = "Gagal: " + err.message;
+        } finally {
+          btn.disabled = false;
+        }
+      }
+
+      // Ctrl+Enter untuk generate
+      document
+        .getElementById("textInput")
+        .addEventListener("keydown", function (e) {
+          if (e.ctrlKey && e.key === "Enter") speak();
+        });
+    </script>
+  </body>
+</html>
