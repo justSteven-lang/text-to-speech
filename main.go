@@ -14,6 +14,7 @@ import (
 	"github.com/justSteven-lang/text-to-speech/tts"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redis/go-redis/v9"
 )
 
 //go:embed static/index.html
@@ -40,7 +41,16 @@ var (
 	)
 )
 
+var rdb *redis.Client
+
+func initRedis() {
+        rdb = redis.NewClient(&redis.Options{
+                Addr: "redis-master.default.svc.cluster.local:6379",
+        })
+}
+
 func init() {
+	initRedis()
 	prometheus.MustRegister(httpRequestsTotal)
 	prometheus.MustRegister(httpRequestDuration)
 }
@@ -113,12 +123,30 @@ func newMux() http.Handler {
 	mux.Handle("/metrics", promhttp.Handler())
 
 	mux.HandleFunc("/speak", speakHandler(tts.TextToSpeech))
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {   // ← tambahkan
         w.Header().Set("Content-Type", "text/html")                      // ← ini
         if _, err := w.Write(indexHTML); err != nil {                    // ← dan
             http.Error(w, "failed to write response", http.StatusInternalServerError) // ← ini
         }                                                                 // ← sampai
     })                                                                    // ← sini
+
+
+	mux.HandleFunc("/enqueue", func(w http.ResponseWriter, r *http.Request) {
+        text := r.URL.Query().Get("text")
+        if text == "" {
+                http.Error(w, "missing text parameter", http.StatusBadRequest)
+                return
+        }
+
+        if err := rdb.RPush(context.Background(), "tts-queue", text).Err(); err != nil {
+                http.Error(w, "failed to enqueue", http.StatusInternalServerError)
+                return
+        }
+
+        w.WriteHeader(http.StatusOK)
+        w.Write([]byte("queued"))
+	})
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -131,6 +159,39 @@ func newMux() http.Handler {
 	return metricsMiddleware(mux)
 }
 
+func startConsumer(ctx context.Context) {
+        go func() {
+                for {
+                        select {
+                        case <-ctx.Done():
+                                return
+                        default:
+                                result, err := rdb.BLPop(ctx, 1*time.Second, "tts-queue").Result()
+                                if err != nil {
+                                        continue
+                                }
+
+                                text := result[1]
+                                log.Printf("processing: %s", text)
+
+                                tmpFile, err := os.CreateTemp("", "speech-*.wav")
+                                if err != nil {
+                                        log.Printf("failed to create temp file: %v", err)
+                                        continue
+                                }
+
+                                if err := tts.TextToSpeech(text, tmpFile.Name()); err != nil {
+                                        log.Printf("failed to process tts: %v", err)
+                                        os.Remove(tmpFile.Name())
+                                        continue
+                                }
+
+                                os.Remove(tmpFile.Name())
+                                log.Printf("done: %s", text)
+                        }
+                }
+        }()
+}
 
 func newServer() *http.Server {
 	return &http.Server{
@@ -145,7 +206,7 @@ func newServer() *http.Server {
 
 func run(ctx context.Context) error {
 	server := newServer()
-
+	startConsumer(ctx)
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Printf("listen error: %v", err)
