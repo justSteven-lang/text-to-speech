@@ -145,7 +145,9 @@ func newMux() http.Handler {
         }
 
         w.WriteHeader(http.StatusOK)
-        w.Write([]byte("queued"))
+        if _, err := w.Write([]byte("queued")); err != nil {
+			log.Printf("failed to write response: %v", err)
+		}
 	})
 
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
@@ -180,14 +182,13 @@ func startConsumer(ctx context.Context) {
                                         continue
                                 }
 
-                                if err := tts.TextToSpeech(text, tmpFile.Name()); err != nil {
-                                        log.Printf("failed to process tts: %v", err)
-                                        os.Remove(tmpFile.Name())
-                                        continue
-                                }
+                                if err := os.Remove(tmpFile.Name()); err != nil {
+        								log.Printf("failed to remove temp file: %v", err)
+								}
 
-                                os.Remove(tmpFile.Name())
-                                log.Printf("done: %s", text)
+                                if err := os.Remove(tmpFile.Name()); err != nil {
+        								log.Printf("failed to remove temp file: %v", err)
+								}
                         }
                 }
         }()
